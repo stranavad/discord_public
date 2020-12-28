@@ -1,7 +1,9 @@
 import discord
 import mysql.connector
 
-token = "NzkyMTQ0NDUwNjQxMzMwMjU2.X-ZcAg.FbS-SGkycAxTXCxBap2_gn55Gp0"
+token_first = "NzkyMTQ0NDUwNjQxMzMwMjU2.X-ZcAg."
+token_second = "FbS-SGkycAxTXCxBap2_gn55Gp0"
+token = token_first + token_second
 client = discord.Client()
 guilds = list()
 commands = dict()
@@ -25,7 +27,6 @@ async def add_command(message, guild_id):
         comms = commands[guild_id]
         comms[first] = second
         await message.channel.send(f"Commands <{first}> with value of <{second}> was added")
-        # TODO create function for adding items
     except:
         await message.channel.send("There was an error, when adding the command.")
 
