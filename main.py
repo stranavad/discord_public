@@ -1,5 +1,6 @@
 import discord
 import mysql.connector
+from config import config
 
 mydb = mysql.connector.connect(
   host="192.46.233.86",
@@ -10,9 +11,7 @@ mydb = mysql.connector.connect(
 
 mycursor = mydb.cursor()
 
-token_first = "NzkyMTQ0NDUwNjQxMzMwMjU2.X-ZcAg."
-token_second = "FbS-SGkycAxTXCxBap2_gn55Gp0"
-token = token_first + token_second
+token = config["token"]
 client = discord.Client()
 guilds = list()
 commands = dict()
@@ -39,15 +38,15 @@ def add_guild(guild_id):
     create_commands_table = f"CREATE TABLE {commands_table} (id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), value VARCHAR(255))"
     create_disabled_channels_table = f"CREATE TABLE {disabled_channels_table} (id BIGINT PRIMARY KEY)"
 
+    # Changed from commit after every change to commit just once
     mycursor.execute(create_commands_table)
-    mydb.commit()
     mycursor.execute(create_disabled_channels_table)
-    mydb.commit()
     mycursor.execute(sql_commands["add_proguild"], (guild_id, 10))
     mydb.commit()
     return
 
 
+# Adding command with .cc
 async def add_command(message, guild_id):
     # Getting the values of the command
     try:
@@ -66,12 +65,13 @@ async def add_command(message, guild_id):
         await message.channel.send("There was an error, when adding the command.")
 
 
-
+# Maximum commands
 async def max_commands(message):
     await message.channel.send("You have used the maximum number of commands, you can create. If you want to use more "
                                "commands, contact us here: stranavadavid@protonmail.com")
 
 
+# Deleting commands with .dc command
 async def delete_command(message, guild_id):
     try:
         _, first = message.content.lower().strip().split("-")
@@ -87,6 +87,7 @@ async def delete_command(message, guild_id):
         await message.channel.send("There was an error, when deleting the command")
 
 
+# Update all of the lists and dictionaries from mysql db
 def update_db():
     mycursor.execute(sql_commands["show_tables"])
     result = mycursor.fetchall()
@@ -127,39 +128,7 @@ def update_db():
 # TODO adding commands, not working. move creating disChannels and commands to add guild function
 @client.event
 async def on_ready():
-    mycursor.execute(sql_commands["show_tables"])
-    result = mycursor.fetchall()
-    for res in result:
-        table_name = res[0]
-        if "commands" in table_name:
-            _, guild_id = table_name.split("x")
-            guild_id = int(guild_id)
-            mycursor.execute(f"SELECT * FROM {table_name}")
-            commands_query = mycursor.fetchall()
-            if commands_query:
-                commands_place = dict()
-                for command in commands_query:
-                    commands_place[command[1]] = command[2]
-                commands[guild_id] = commands_place
-        elif "disabled_channels" in table_name:
-            _, guild_id = table_name.split("x")
-            guild_id = int(guild_id)
-            mycursor.execute(f"SELECT * FROM {table_name}")
-            channels_query = mycursor.fetchall()
-            if channels_query:
-                disabled_channels = list()
-                for channel in channels_query:
-                    disabled_channels.append(channel[0])
-                disChannels[guild_id] = disabled_channels
-        elif table_name == "guilds":
-            mycursor.execute("SELECT * FROM guilds")
-            guilds_results = mycursor.fetchall()
-            if guilds_results:
-                for guilds_result in guilds_results:
-                    guilds.append(guilds_result[0])
-        else:
-            print("Table name " + table_name + " is not recognized")
-
+    update_db()
     print("Discord bot is ready")
 
 
@@ -252,8 +221,6 @@ async def on_message(message):
                 if id in proGuilds:
                     proGuilds.pop(id)
                     commands.pop(id)
-                    # TODO remove all commands from db with that id
-                    # TODO change the guild commands number value back to default -10 commands
                     db_guild_id = "commandsx" + str(id)
                     mycursor.execute("UPDATE guilds SET commands = 10 WHERE id = %s", (id,))
                     mycursor.execute(f"DELETE FROM {db_guild_id}")
@@ -264,6 +231,4 @@ async def on_message(message):
             except:
                 await message.channel.send("There was some problem deleting the pro guild")
 
-
-# TODO when creating new list with list[list id] check if it is being stored back
 client.run(token)
