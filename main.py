@@ -3,9 +3,9 @@ import mysql.connector
 from config import config
 
 mydb = mysql.connector.connect(
-  host="192.46.233.86",
-  user="root",
-  password="<Code><Tech> 127521",
+  host="xxxxxxx",
+  user="xxxx",
+  password="xxxxxxx",
   database="discord_bot"
 )
 
